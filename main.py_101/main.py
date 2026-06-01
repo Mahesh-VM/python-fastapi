@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Query
+from fastapi import FastAPI, Query, Path
 from datetime import datetime
 import time, random
 from pydantic import BaseModel, AfterValidator
@@ -94,6 +94,18 @@ async def read_items(
         id, item = random.choice(list(data.items()))
     return {"item_id": id, "item": item}
     
+
+@app.get("/v1/get-item/{item_id}")
+async def get_item_by_id(
+    item_id: Annotated[int, Path(title="Item ID", description="The ID of the item to retrieve", ge=1, le=1000)],
+    q: Annotated[str | None, Query(alias="item-query")] = None,
+    ):
+    results = {"item_id": item_id}
+    print(q)
+    if q:
+        print(q)
+        results.update({"q":q})
+    return results
 
 @app.post("/v1/items/")
 def create_items(item: Item):

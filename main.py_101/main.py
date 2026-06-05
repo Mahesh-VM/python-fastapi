@@ -1,14 +1,26 @@
 from fastapi import FastAPI, Query, Path
 from datetime import datetime
 import time, random
-from pydantic import BaseModel, AfterValidator
-from typing import Annotated
+from pydantic import BaseModel, AfterValidator, Field
+from typing import Annotated, List, Literal
 
 class Item(BaseModel):
     name: str
     description: str | None = None
     price: float
     tax: float | None = None
+
+class User(BaseModel):
+    username: str
+    email: str
+    full_name: str | None = None
+
+class FilterParams(BaseModel):
+    model_config = {'extra': 'forbid'}
+    limit: int = Field(default=10, ge=1, le=100, description="The number of items to return")
+    offset: int = Field(default=0, ge=0)
+    order_by: Literal["created_at", "updated_at", "name"] = "created_at"
+    tag: List[str] = []
 
 app = FastAPI(
     title="My API",
@@ -106,6 +118,14 @@ async def get_item_by_id(
         print(q)
         results.update({"q":q})
     return results
+
+@app.get("/v2/read-item/")
+async def read_item_with_model_query(filter_query: Annotated[FilterParams, Query()]):
+    return filter_query
+
+@app.post("/v2/create-item/{item_id}")
+async def create_item_with_model_path(item_id: Annotated[int, Path(title="Item ID", ge=1, le=100)], item: Item, user: User):
+    return {"item_id": item_id, "item": item, "user": user}
 
 @app.post("/v1/items/")
 def create_items(item: Item):
